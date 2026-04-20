@@ -1,0 +1,14 @@
+node_modules/
+debug/
+data/
+.codex/
+
+config.local.txt
+
+*.log
+*.tmp
+*.cache
+*.local
+
+.DS_Store
+Thumbs.db

@@ -82,4 +82,163 @@ async function getAnswersFromImage(imagePath, questionType = '选择题', log, o
     return [];
 }
 
-module.exports = { getAnswersFromImage };
+async function getSubjectiveAnswers(questionText, answerCount = 1, log, options = {}) {
+    const _log = log || console.log;
+    const modelName = options.model || MODEL_NAME;
+    const thinkingLevel = options.reasoningEffort || 'medium';
+    const maxRetries = 3;
+    const prompt = [
+        '你是课程作业答题助手。',
+        '请根据题目直接生成可提交的中文答案。',
+        '只返回一个 JSON 对象，不要输出解释或 markdown。',
+        '格式固定为 {"answers":["答案1","答案2"]}。',
+        `作答框数量: ${Math.max(1, answerCount)}`,
+        '',
+        '题目内容：',
+        String(questionText || '')
+    ].join('\n');
+
+    const body = {
+        model: modelName,
+        temperature: 0.2,
+        top_p: 1,
+        reasoning_effort: thinkingLevel,
+        messages: [{
+            role: 'user',
+            content: prompt
+        }]
+    };
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            _log(`🤖 请求主观题答案 (${modelName}, thinking: ${thinkingLevel})...`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 600000);
+
+            const resp = await fetch(API_BASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!resp.ok) {
+                _log('❌ HTTP Error:', resp.status, await resp.text());
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
+            }
+
+            const data = await resp.json();
+            const content = data.choices?.[0]?.message?.content;
+            let jsonText = '';
+            if (typeof content === 'string') jsonText = content;
+            else if (Array.isArray(content)) jsonText = (content.find(part => part.type === 'text') || content[0])?.text ?? '';
+
+            jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) jsonText = jsonMatch[0];
+
+            const parsed = JSON.parse(jsonText);
+            if (!Array.isArray(parsed.answers)) return [];
+            return parsed.answers
+                .map(answer => String(answer || '').trim())
+                .filter(Boolean)
+                .slice(0, Math.max(1, answerCount));
+        } catch (err) {
+            _log(`❌ 主观题请求失败: ${err.message} (${attempt + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
+
+    return [];
+}
+
+async function getTextAnswersFromImage(imagePath, questionType = '填空题', answerCount = 1, log, options = {}) {
+    const _log = log || console.log;
+    const modelName = options.model || MODEL_NAME;
+    const thinkingLevel = options.reasoningEffort || 'medium';
+    const absPath = path.resolve(imagePath);
+    let imageBase64;
+    try {
+        imageBase64 = fs.readFileSync(absPath).toString('base64');
+    } catch (err) {
+        _log('❌ 读取图片失败:', err.message);
+        return [];
+    }
+
+    const maxRetries = 3;
+    const prompt = [
+        '请仔细阅读图片中的题目，并给出可直接填写到页面中的答案。',
+        '如果有多个空，按照从前到后的顺序返回。',
+        '只返回一个 JSON 对象，不要输出解释或 markdown。',
+        `格式固定为 {"answers":["答案1","答案2"]}。`,
+        `题型提示：${questionType}`,
+        `答案数量：${Math.max(1, answerCount)}`
+    ].join('\n');
+
+    const body = {
+        model: modelName,
+        temperature: 0,
+        top_p: 1,
+        reasoning_effort: thinkingLevel,
+        messages: [{
+            role: 'user',
+            content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}` } }
+            ]
+        }]
+    };
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            _log(`🤖 请求文本答案识别 (${modelName}, thinking: ${thinkingLevel})...`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 600000);
+
+            const resp = await fetch(API_BASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!resp.ok) {
+                _log('❌ HTTP Error:', resp.status, await resp.text());
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
+            }
+
+            const data = await resp.json();
+            const content = data.choices?.[0]?.message?.content;
+            let jsonText = '';
+            if (typeof content === 'string') jsonText = content;
+            else if (Array.isArray(content)) jsonText = (content.find(part => part.type === 'text') || content[0])?.text ?? '';
+
+            jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) jsonText = jsonMatch[0];
+            const parsed = JSON.parse(jsonText);
+            if (!Array.isArray(parsed.answers)) return [];
+            return parsed.answers
+                .map(answer => String(answer || '').trim())
+                .filter(Boolean)
+                .slice(0, Math.max(1, answerCount));
+        } catch (err) {
+            _log(`❌ 文本答案识别失败: ${err.message} (${attempt + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
+
+    return [];
+}
+
+module.exports = { getAnswersFromImage, getSubjectiveAnswers, getTextAnswersFromImage };
