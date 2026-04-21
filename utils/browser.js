@@ -1,10 +1,9 @@
 const { chromium } = require('playwright');
-const { HEADLESS, SLOW_MO } = require('./config');
 
 async function launchBrowser() {
     const browser = await chromium.launch({
-        headless: HEADLESS,
-        slowMo: SLOW_MO,
+        headless: false,
+        slowMo: 100,
         channel: 'chrome',
         args: [
             '--disable-blink-features=AutomationControlled',
