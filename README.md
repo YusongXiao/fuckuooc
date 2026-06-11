@@ -126,7 +126,7 @@ node start.js
 
 ---
 
-<details>
+<details id="-免费获取火山引擎-api-key">
 <summary><b>🆓 免费获取火山引擎 API Key</b></summary>
 
 火山引擎提供**用户协作计划**，参与后可免费使用 doubao 系列模型。加入条件是同意模型产生的数据可被平台采集用于模型改进。
