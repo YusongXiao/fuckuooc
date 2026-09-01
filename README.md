@@ -16,23 +16,23 @@
 
 **自动登录：**
 
-<img src="https://oss.songhappy.cn/fuckuooc/auto_login.gif" width="720" alt="自动登录演示">
+<img src="https://oss.songhappy.cn/archive/fuckuooc/auto_login.gif" width="720" alt="自动登录演示">
 
 **登录后自动同时刷三个课程：**
 
-<img src="https://oss.songhappy.cn/fuckuooc/auto_three_class.gif" width="720" alt="三课程并行演示">
+<img src="https://oss.songhappy.cn/archive/fuckuooc/auto_three_class.gif" width="720" alt="三课程并行演示">
 
 **自动完成视频内测验：**
 
-<img src="https://oss.songhappy.cn/fuckuooc/auto_in_video_test.gif" width="720" alt="视频内测验演示">
+<img src="https://oss.songhappy.cn/archive/fuckuooc/auto_in_video_test.gif" width="720" alt="视频内测验演示">
 
 **自动完成视频后测验：**
 
-<img src="https://oss.songhappy.cn/fuckuooc/auto_test.gif" width="720" alt="章节测验演示">
+<img src="https://oss.songhappy.cn/archive/fuckuooc/auto_test.gif" width="720" alt="章节测验演示">
 
 ## 🚀 快速开始
 
-> **环境要求**：Node.js >= 18（代码使用了原生 `fetch`）
+> **环境要求**：Node.js = 24（代码使用了原生 `fetch`）
 
 ### 1. 克隆项目
 
@@ -44,6 +44,9 @@ cd fuckuooc
 ### 2. 安装依赖
 
 ```bash
+nvm install 24
+nvm use 24
+
 npm install
 npx playwright install chromium
 ```
@@ -61,7 +64,7 @@ PASSWORD=你的密码
 API_KEY=你的火山引擎API密钥
 ```
 
-API 密钥从火山引擎获取：<https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey>（低价 / 免费使用，详见下方[免费获取 API Key](#-免费获取火山引擎-api-key)）
+API 密钥从火山引擎获取：<https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey>
 
 其他配置项（模型名称、API 地址等）已有默认值，一般无需修改。完整配置说明见下方[配置参考](#配置参考)。
 
@@ -124,18 +127,6 @@ node start.js
 - 模型答题正确率取决于模型本身的识图和理解能力，无法保证 100% 正确
 - 大模型 API 调用会产生费用，请关注用量
 
----
-
-<details id="-免费获取火山引擎-api-key">
-<summary><b>🆓 免费获取火山引擎 API Key</b></summary>
-
-火山引擎提供**用户协作计划**，参与后可免费使用 doubao 系列模型。加入条件是同意模型产生的数据可被平台采集用于模型改进。
-
-加入入口：<https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement/rewardPlan>
-
-加入后，前往 API Key 管理页面创建密钥即可：<https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey>
-
-</details>
 
 ---
 
