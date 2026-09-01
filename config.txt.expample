@@ -1,0 +1,15 @@
+# UOOC 账号
+USERNAME=
+PASSWORD=
+
+# LLM 配置
+API_KEY=
+
+# 默认模型（答题用）
+MODEL=doubao-seed-2-0-mini-260215
+
+# 重试模型（答错后重做用，用更强的模型）
+RETRY_MODEL=doubao-seed-2-0-lite-260215
+
+# API 地址
+BASE_URL=https://ark.cn-beijing.volces.com/api/v3/chat/completions
