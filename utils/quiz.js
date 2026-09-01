@@ -108,21 +108,8 @@ async function processQuizQuestions(page, log, courseId) {
         }
         await page.waitForTimeout(3000);
 
-        await handleCaptcha(page, locate, async () => {
-            const btn = await locate('div.btn.btn-warning:has-text("提交")');
-            if (!btn) return false;
-            return !(await btn.evaluate(el => el.classList.contains('disabled') || el.disabled));
-        }, 10, log);
-
-        const finalBtn = await locate('div.btn.btn-warning:has-text("提交")');
-        if (finalBtn) {
-            try {
-                await humanClick(page, finalBtn);
-                log('✅ 已提交');
-            } catch (e) {
-                log(`❌ 提交失败: ${e.message}`);
-                break;
-            }
+        if (!await confirmQuizSubmission(page, log, locate)) {
+            break;
         }
 
         // 检查分数
@@ -403,6 +390,44 @@ async function applyAnswers(page, answersMap, log) {
     }
 }
 
+// 通过智能验证后确认提交；弹窗未消失时重试一次验证
+async function confirmQuizSubmission(page, log, locate) {
+    const finalSubmitSelector = 'div.btn.btn-warning:has-text("提交")';
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+        await handleCaptcha(page, locate, async () => {
+            const btn = await locate(finalSubmitSelector);
+            if (!btn) return false;
+            return !(await btn.evaluate(el => el.classList.contains('disabled') || el.disabled));
+        }, 10, log);
+
+        const finalBtn = await locate(finalSubmitSelector);
+        if (!finalBtn) return true;
+
+        try {
+            await humanClick(page, finalBtn);
+        } catch (e) {
+            log(`❌ 提交失败: ${e.message}`);
+            return false;
+        }
+
+        await page.waitForTimeout(3000);
+        if (await locate('.layui-layer-content:has-text("测验通过")')) {
+            log('✅ 测验已通过');
+            return true;
+        }
+        if (!await locate(finalSubmitSelector)) {
+            log('✅ 已提交');
+            return true;
+        }
+
+        if (attempt === 0) log('⚠️ 提交弹窗未消失，重新验证...');
+    }
+
+    log('❌ 提交弹窗仍未消失');
+    return false;
+}
+
 // 提交试卷并返回是否通过
 async function submitAndCheck(page, log, locate) {
     log('📝 提交试卷...');
@@ -415,22 +440,7 @@ async function submitAndCheck(page, log, locate) {
     }
     await page.waitForTimeout(3000);
 
-    await handleCaptcha(page, locate, async () => {
-        const btn = await locate('div.btn.btn-warning:has-text("提交")');
-        if (!btn) return false;
-        return !(await btn.evaluate(el => el.classList.contains('disabled') || el.disabled));
-    }, 10, log);
-
-    const finalBtn = await locate('div.btn.btn-warning:has-text("提交")');
-    if (finalBtn) {
-        try {
-            await humanClick(page, finalBtn);
-            log('✅ 已提交');
-        } catch (e) {
-            log(`❌ 提交失败: ${e.message}`);
-            return false;
-        }
-    }
+    if (!await confirmQuizSubmission(page, log, locate)) return false;
 
     await page.waitForTimeout(3000);
     const failMsg = await checkFailDialog(page, log);

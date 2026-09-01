@@ -75,12 +75,16 @@ async function handleCaptcha(page, locateFn, checkEnabledFn, maxRetries = 10, lo
     _log('🛡️ 处理智能验证...');
     while (maxRetries > 0) {
         const verifyBox = await locateFn('#aliyunCaptcha-checkbox-icon');
-        if (verifyBox) {
-            try {
-                await verifyBox.scrollIntoViewIfNeeded();
-                await humanClick(page, verifyBox);
-            } catch {}
+        if (!verifyBox) {
+            await page.waitForTimeout(2000);
+            maxRetries--;
+            continue;
         }
+
+        try {
+            await verifyBox.scrollIntoViewIfNeeded();
+            await humanClick(page, verifyBox);
+        } catch {}
 
         await page.waitForTimeout(2000);
 
