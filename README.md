@@ -32,7 +32,7 @@
 
 ## 🚀 快速开始
 
-> **环境要求**：Node.js = 24（代码使用了原生 `fetch`）
+> **环境要求**：Node.js = 24
 
 ### 1. 克隆项目
 
@@ -100,10 +100,10 @@ node start.js
 脚本要求模型具备以下能力：
 
 1. **支持图片输入 / 多模态理解** — 需要读取题目截图
-2. **兼容 OpenAI Chat Completions 接口格式** — 脚本使用标准 OpenAI 请求体
-3. **支持深度思考**（`thinking` 参数）— 用于提升答题准确率
+2. **兼容 OpenAI Chat Completions 接口格式** — 脚本通过 OpenAI SDK 请求模型
+3. **可选支持深度思考**（`reasoning_effort` 参数）— 用于提升答题准确率
 
-理论上支持任何 OpenAI 格式的 API 地址。如果你使用其他平台遇到兼容性问题，可以尝试手动修改 `utils/module.js` 中的请求参数。
+理论上支持任何 OpenAI 格式的 API 地址。如果模型不支持推理或采样参数，脚本会自动使用通用参数重试。
 
 ### 配置参考
 
@@ -116,7 +116,9 @@ node start.js
 | `API_KEY` | 大模型 API Key | （必填） |
 | `MODEL` | 模型名称（需支持多模态图片输入） | `doubao-seed-2-0-mini-260215` |
 | `RETRY_MODEL` | 重做测验时使用的模型名称 | `doubao-seed-2-0-lite-260215` |
-| `BASE_URL` | OpenAI 兼容的 chat/completions 接口地址 | `https://ark.cn-beijing.volces.com/api/v3/chat/completions` |
+| `BASE_URL` | OpenAI 兼容的 API 根地址或 chat/completions 完整地址 | `https://ark.cn-beijing.volces.com/api/v3/chat/completions` |
+
+`BASE_URL` 可以填写 `https://ark.cn-beijing.volces.com/api/v3`，也可以填写 `https://ark.cn-beijing.volces.com/api/v3/chat/completions`。
 
 ### 运行须知
 
