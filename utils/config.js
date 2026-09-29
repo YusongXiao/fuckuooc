@@ -19,8 +19,10 @@ if (fs.existsSync(cfgPath)) {
 const USERNAME = cfg.USERNAME || process.env.UOOC_USERNAME;
 const PASSWORD = cfg.PASSWORD || process.env.UOOC_PASSWORD;
 const API_KEY = cfg.API_KEY || process.env.LLM_API_KEY;
-const MODEL_NAME = cfg.MODEL || process.env.LLM_MODEL || 'doubao-seed-2-0-mini-260215';
-const RETRY_MODEL = cfg.RETRY_MODEL || process.env.LLM_RETRY_MODEL || 'doubao-seed-2-0-lite-260215';
+const MODEL_NAME = cfg.MODEL || process.env.LLM_MODEL || 'doubao-seed-2-1-lite-260915';
+const MODEL_REASONING_EFFORT = cfg.MODEL_REASONING_EFFORT || process.env.LLM_MODEL_REASONING_EFFORT || 'medium';
+const RETRY_MODEL = cfg.RETRY_MODEL || process.env.LLM_RETRY_MODEL || 'doubao-seed-2-1-turbo-260628';
+const RETRY_MODEL_REASONING_EFFORT = cfg.RETRY_MODEL_REASONING_EFFORT || process.env.LLM_RETRY_MODEL_REASONING_EFFORT || 'high';
 const API_BASE_URL = cfg.BASE_URL || process.env.LLM_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
 if (!USERNAME || !PASSWORD) {
@@ -36,4 +38,9 @@ if (!API_KEY) {
 const DATA_DIR = path.join(__dirname, '..', 'data', USERNAME);
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-module.exports = { USERNAME, PASSWORD, API_KEY, MODEL_NAME, RETRY_MODEL, API_BASE_URL, DATA_DIR };
+module.exports = {
+    USERNAME, PASSWORD, API_KEY,
+    MODEL_NAME, MODEL_REASONING_EFFORT,
+    RETRY_MODEL, RETRY_MODEL_REASONING_EFFORT,
+    API_BASE_URL, DATA_DIR
+};

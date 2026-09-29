@@ -1,5 +1,10 @@
 const path = require('path');
-const { DATA_DIR, RETRY_MODEL } = require('./config');
+const {
+    DATA_DIR,
+    MODEL_REASONING_EFFORT,
+    RETRY_MODEL,
+    RETRY_MODEL_REASONING_EFFORT
+} = require('./config');
 const { locateInAnyFrame, humanClick, handleCaptcha } = require('./browser');
 const { getAnswersFromImage } = require('./module');
 
@@ -41,8 +46,8 @@ async function processQuizQuestions(page, log, courseId) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         const isRetry = attempt > 0;
         let modelOptions = isRetry
-            ? { model: RETRY_MODEL, reasoningEffort: 'high' }
-            : { reasoningEffort: 'medium' };
+            ? { model: RETRY_MODEL, reasoningEffort: RETRY_MODEL_REASONING_EFFORT }
+            : { reasoningEffort: MODEL_REASONING_EFFORT };
 
         if (isRetry) {
             log(`🔄 重做测验（第 ${attempt + 1} 次尝试，使用 ${RETRY_MODEL}）...`);
@@ -76,7 +81,7 @@ async function processQuizQuestions(page, log, courseId) {
                 log(`⚠️ 检测到已有选中项（测验做过但未提交/通过），先清空所有选项，使用 ${RETRY_MODEL} 重做...`);
                 await clearAllSelections(page, log);
                 await page.waitForTimeout(1000);
-                modelOptions = { model: RETRY_MODEL, reasoningEffort: 'high' };
+                modelOptions = { model: RETRY_MODEL, reasoningEffort: RETRY_MODEL_REASONING_EFFORT };
             }
         }
 

@@ -114,8 +114,10 @@ node start.js
 | `USERNAME` | UOOC 登录手机号 | （必填） |
 | `PASSWORD` | UOOC 登录密码 | （必填） |
 | `API_KEY` | 大模型 API Key | （必填） |
-| `MODEL` | 模型名称（需支持多模态图片输入） | `doubao-seed-2-0-mini-260215` |
-| `RETRY_MODEL` | 重做测验时使用的模型名称 | `doubao-seed-2-0-lite-260215` |
+| `MODEL` | 模型名称（需支持多模态图片输入） | `doubao-seed-2-1-lite-260915` |
+| `MODEL_REASONING_EFFORT` | 默认模型的思考强度 | `medium` |
+| `RETRY_MODEL` | 重做测验时使用的模型名称 | `doubao-seed-2-1-turbo-260628` |
+| `RETRY_MODEL_REASONING_EFFORT` | 重试模型的思考强度 | `high` |
 | `BASE_URL` | OpenAI 兼容的 API 根地址或 chat/completions 完整地址 | `https://ark.cn-beijing.volces.com/api/v3/chat/completions` |
 
 `BASE_URL` 可以填写 `https://ark.cn-beijing.volces.com/api/v3`，也可以填写 `https://ark.cn-beijing.volces.com/api/v3/chat/completions`。

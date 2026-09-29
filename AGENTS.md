@@ -20,7 +20,7 @@ node start.js
 - 保持现有 CommonJS 风格和简洁的 JavaScript 写法。
 - 优先做小范围修改，不随意重构无关代码。
 - 修改页面交互逻辑时，注意等待、重试和异常处理。
-- 若行为、配置或使用方式发生变化，同步更新 `README.md`。
+- 若行为、配置或使用方式发生变化，同步更新 `README.md`和`原理.md`。
 - 改动完某一个功能或者修复完某一个bug，输出一个简洁的english commit message（使用gitmoji，例如🐛 navigate directly to course center on retries）
 
 ## 安全
