@@ -4,6 +4,8 @@ const { learnCourse } = require('./course');
 const { createLogger } = require('./logger');
 
 const MAX_CONCURRENT = 3;
+const MAX_COURSE_REFRESH_RETRIES = 3;
+const COURSE_REFRESH_INTERVAL_MS = 5000;
 
 async function run() {
     const { browser, context, page } = await launchBrowser();
@@ -72,25 +74,42 @@ async function run() {
     } catch {}
     await page.waitForTimeout(3000);
 
-    // 3. 收集课程链接
+    // 3. 收集课程链接；未找到时等待后刷新，最多重试 3 次
+    async function collectCourseLinks() {
+        const continueBtns = page.locator('a:has-text("继续学习"), a:has-text("开始学习")');
+        try {
+            await continueBtns.first().waitFor({ state: 'visible', timeout: 10000 });
+        } catch {}
+
+        const count = await continueBtns.count();
+        console.log(`🔎 找到 ${count} 个课程`);
+
+        const links = [];
+        for (let i = 0; i < count; i++) {
+            const href = await continueBtns.nth(i).getAttribute('href');
+            if (!href) continue;
+            let url = href.startsWith('http') ? href : new URL(href, page.url()).toString();
+            const m = url.match(/\/home\/learn(\/new)?\/(\d+)/);
+            if (m) url = `http://www.uooc.net.cn/home/course/${m[2]}`;
+            links.push(url);
+            console.log(`   📌 课程 ${i + 1}: ${url}`);
+        }
+        return links;
+    }
+
     await page.waitForTimeout(3000);
-    const continueBtns = page.locator('a:has-text("继续学习"), a:has-text("开始学习")');
-    try {
-        await continueBtns.first().waitFor({ state: 'visible', timeout: 10000 });
-    } catch {}
+    let courseLinks = await collectCourseLinks();
 
-    const count = await continueBtns.count();
-    console.log(`🔎 找到 ${count} 个课程`);
-
-    const courseLinks = [];
-    for (let i = 0; i < count; i++) {
-        const href = await continueBtns.nth(i).getAttribute('href');
-        if (!href) continue;
-        let url = href.startsWith('http') ? href : new URL(href, page.url()).toString();
-        const m = url.match(/\/home\/learn(\/new)?\/(\d+)/);
-        if (m) url = `http://www.uooc.net.cn/home/course/${m[2]}`;
-        courseLinks.push(url);
-        console.log(`   📌 课程 ${i + 1}: ${url}`);
+    for (let attempt = 1; courseLinks.length === 0 && attempt <= MAX_COURSE_REFRESH_RETRIES; attempt++) {
+        console.log(`🔄 暂未找到课程，5 秒后刷新重试 (${attempt}/${MAX_COURSE_REFRESH_RETRIES})...`);
+        await page.waitForTimeout(COURSE_REFRESH_INTERVAL_MS);
+        try {
+            await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+        } catch {
+            console.log('⚠️ 页面刷新等待超时，继续检查课程...');
+        }
+        await page.waitForTimeout(3000);
+        courseLinks = await collectCourseLinks();
     }
 
     if (courseLinks.length === 0) {
