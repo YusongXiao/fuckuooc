@@ -149,13 +149,74 @@ async function answerOneQuestion(q, page, log, screenshotPath, modelOptions = {}
 
     const answers = await recognizeWithRetry(q, screenshotPath, questionType, page, log, 5, modelOptions);
     if (!answers || answers.length === 0) {
-        log('      ⚠️ 识别失败，随机选择');
-        const options = await q.locator('.ti-a').all();
-        if (options.length > 0) {
-            await options[Math.floor(Math.random() * options.length)].click();
+        if (isTextQuestionType(questionType)) {
+            log('      ⚠️ 识别失败，跳过该文本题');
+        } else {
+            log('      ⚠️ 识别失败，随机选择');
+            const options = await q.locator('.ti-a').all();
+            if (options.length > 0) {
+                await options[Math.floor(Math.random() * options.length)].click();
+            }
         }
+    } else if (isTextQuestionType(questionType)) {
+        await fillTextAnswers(q, answers, log);
     } else {
         await clickAnswers(q, answers, log);
+    }
+}
+
+function isTextQuestionType(questionType) {
+    return ['填空题', '名词解释', '问答题', '论述题'].includes(questionType);
+}
+
+async function fillTextAnswers(q, answers, log) {
+    const blankInputs = q.locator('textarea.ue-container1');
+    const blankCount = await blankInputs.count();
+    if (blankCount > 0) {
+        for (let i = 0; i < blankCount; i++) {
+            const answer = String(answers[i] ?? '').trim();
+            if (!answer) continue;
+            const input = blankInputs.nth(i);
+            await input.fill(answer);
+            await input.dispatchEvent('change');
+            await input.dispatchEvent('mouseleave');
+            log(`      ✅ 填写第 ${i + 1} 空: ${answer}`);
+        }
+        return;
+    }
+
+    const editors = q.locator('.ue-container');
+    const editorCount = await editors.count();
+    for (let i = 0; i < editorCount; i++) {
+        const answer = String(answers[i] ?? (editorCount === 1 ? answers.join('\n') : '')).trim();
+        if (!answer) continue;
+
+        const editor = editors.nth(i);
+        const iframe = editor.locator('iframe').first();
+        const iframeHandle = await iframe.elementHandle();
+        const editorFrame = iframeHandle && await iframeHandle.contentFrame();
+        if (!editorFrame) {
+            log(`      ⚠️ 未找到第 ${i + 1} 个文本编辑器`);
+            continue;
+        }
+
+        await editorFrame.locator('body').evaluate((body, text) => {
+            body.textContent = text;
+            body.dispatchEvent(new Event('input', { bubbles: true }));
+            body.dispatchEvent(new Event('change', { bubbles: true }));
+            body.dispatchEvent(new Event('blur', { bubbles: true }));
+        }, answer);
+
+        const hidden = editor.locator('xpath=following-sibling::textarea[contains(@class, "hide")][1]');
+        if (await hidden.count() > 0) {
+            await hidden.evaluate((textarea, text) => {
+                textarea.value = text;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            }, answer);
+        }
+        await editor.dispatchEvent('mouseleave');
+        log(`      ✅ 填写文本答案: ${answer}`);
     }
 }
 
@@ -205,6 +266,12 @@ async function detectQuestionType(q) {
     if (typeText.includes('单选')) return '单选题';
     if (typeText.includes('多选')) return '多选题';
     if (typeText.includes('判断')) return '判断题';
+    if (typeText.includes('填空')) return '填空题';
+    if (typeText.includes('名词解释')) return '名词解释';
+    if (typeText.includes('问答')) return '问答题';
+    if (typeText.includes('论述')) return '论述题';
+    if (await q.locator('textarea.ue-container1').count() > 0) return '填空题';
+    if (await q.locator('.ue-container iframe').count() > 0) return '问答题';
     return '选择题';
 }
 

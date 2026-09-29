@@ -4,6 +4,7 @@ const OpenAI = require('openai');
 const { API_KEY, MODEL_NAME, API_BASE_URL } = require('./config');
 
 const QUIZ_PROMPT = '请仔细阅读图片中的题干和所有选项，分析并找出正确答案。如果选项前面是方框，就是多选题，圆框就是单选题。做题之前，你需要先判断这个题是单选题还是多选题。只要求返回一个 JSON 对象。如果这道题只需要一个答案或者只有一个正确答案，请放在数组 answers 里面。只返回一个 JSON，不要输出任何解释或者 markdown 代码块包裹。\n例如：{"answers":["A","C"]}。如果你无论如何都无法确定并且真的找不到，才返回 {"answers":[]}';
+const TEXT_QUESTION_PROMPT = '请仔细阅读图片中的题干并直接作答。如果是填空题，按空格顺序将每个答案分别放入 answers 数组；如果是名词解释、问答题或论述题，给出准确、简洁、可直接填写的答案，并放入 answers 数组。只返回一个 JSON 对象，不要输出解释或 markdown 代码块。\n例如：{"answers":["第一空答案","第二空答案"]}。如果无法确定，才返回 {"answers":[]}';
 const sdkBaseURL = API_BASE_URL.replace(/\/chat\/completions\/?$/, '');
 const client = new OpenAI({
     apiKey: API_KEY,
@@ -21,6 +22,9 @@ async function getAnswersFromImage(imagePath, questionType = '选择题', log, o
     const _log = log || console.log;
     const modelName = options.model || MODEL_NAME;
     const thinkingLevel = options.reasoningEffort || 'medium';
+    const prompt = ['填空题', '名词解释', '问答题', '论述题'].includes(questionType)
+        ? TEXT_QUESTION_PROMPT
+        : QUIZ_PROMPT;
     const absPath = path.resolve(imagePath);
     let imageBase64;
     try {
@@ -39,7 +43,7 @@ async function getAnswersFromImage(imagePath, questionType = '选择题', log, o
         messages: [{
             role: 'user',
             content: [
-                { type: 'text', text: QUIZ_PROMPT + (questionType ? `\n\n题型提示：${questionType}` : '') },
+                { type: 'text', text: prompt + (questionType ? `\n\n题型提示：${questionType}` : '') },
                 { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}` } }
             ]
         }]
