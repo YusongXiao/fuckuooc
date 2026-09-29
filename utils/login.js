@@ -6,6 +6,15 @@ const { createLogger } = require('./logger');
 const MAX_CONCURRENT = 3;
 const MAX_COURSE_REFRESH_RETRIES = 3;
 const COURSE_REFRESH_INTERVAL_MS = 5000;
+const COURSE_CENTER_URL = 'http://www.uooc.net.cn/home#/center/course/learn';
+
+async function gotoCourseCenter(page) {
+    try {
+        await page.goto(COURSE_CENTER_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    } catch {
+        console.log('⚠️ 个人中心加载等待超时，继续检查课程...');
+    }
+}
 
 async function run() {
     const { browser, context, page } = await launchBrowser();
@@ -65,16 +74,12 @@ async function run() {
     if (submitBtn) await humanClick(page, submitBtn);
     await page.waitForTimeout(5000);
 
-    // 2. 进入个人页
-    try {
-        const avatar = page.locator('a.layout-header-avatar, #top_avatar');
-        await avatar.first().waitFor({ state: 'visible', timeout: 10000 });
-        await avatar.first().click();
-        console.log('✅ 已点击顶部头像');
-    } catch {}
+    // 2. 进入个人中心课程页
+    console.log('🎓 进入个人中心课程页...');
+    await gotoCourseCenter(page);
     await page.waitForTimeout(3000);
 
-    // 3. 收集课程链接；未找到时等待后刷新，最多重试 3 次
+    // 3. 收集课程链接；未找到时重新进入课程页，最多重试 3 次
     async function collectCourseLinks() {
         const continueBtns = page.locator('a:has-text("继续学习"), a:has-text("开始学习")');
         try {
@@ -101,13 +106,9 @@ async function run() {
     let courseLinks = await collectCourseLinks();
 
     for (let attempt = 1; courseLinks.length === 0 && attempt <= MAX_COURSE_REFRESH_RETRIES; attempt++) {
-        console.log(`🔄 暂未找到课程，5 秒后刷新重试 (${attempt}/${MAX_COURSE_REFRESH_RETRIES})...`);
+        console.log(`🔄 暂未找到课程，5 秒后重新进入个人中心 (${attempt}/${MAX_COURSE_REFRESH_RETRIES})...`);
         await page.waitForTimeout(COURSE_REFRESH_INTERVAL_MS);
-        try {
-            await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
-        } catch {
-            console.log('⚠️ 页面刷新等待超时，继续检查课程...');
-        }
+        await gotoCourseCenter(page);
         await page.waitForTimeout(3000);
         courseLinks = await collectCourseLinks();
     }
